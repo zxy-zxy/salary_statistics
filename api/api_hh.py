@@ -1,4 +1,6 @@
+import datetime
 from array import array
+from itertools import count
 
 from api.common import perform_request, predict_rub_salary
 
@@ -22,7 +24,11 @@ def _parse_records_from_hh(records):
     return result
 
 
-def get_statistics_from_hh(url, text, total_pages, per_page, area, date_from, date_to):
+def get_statistics_from_hh(url, text, per_page, area, days_to_review):
+    date_to = datetime.datetime.now()
+    date_from = \
+        datetime.datetime.now() - datetime.timedelta(days=days_to_review)
+
     request_params = dict(
         text=text,
         area=area,
@@ -34,23 +40,29 @@ def get_statistics_from_hh(url, text, total_pages, per_page, area, date_from, da
     salary_records = array('I')
     total_records = 0
 
-    for page in range(1, total_pages):
+    for page in count(start=1):
         request_params.update({'page': page})
         response_json = perform_request(url, request_params)
+        pages_count = response_json['pages']
+        if page > pages_count:
+            break
 
         records = response_json['items']
         total_records = response_json['found']
 
-        if not records:
-            break
-
         salary_records.extend(_parse_records_from_hh(records))
 
-    salary_records = list(filter(lambda x: x, salary_records))
+    salary_records = [x for x in salary_records if x]
 
     if len(salary_records):
         average_salary = int(sum(salary_records) / len(salary_records))
     else:
         average_salary = 0
 
-    return [text, total_records, len(salary_records), average_salary]
+    return {
+        'specialization': text,
+        'total_records': total_records,
+        'processed_records':
+            len(salary_records),
+        'average_salary': average_salary
+    }

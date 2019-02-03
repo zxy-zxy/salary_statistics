@@ -6,8 +6,6 @@ class SalaryAPIException(Exception):
 
 
 def perform_request(url, request_params, headers=None):
-    print(request_params)
-
     try:
         response = requests.get(
             url,
@@ -35,7 +33,6 @@ def perform_request(url, request_params, headers=None):
             f'A response from HH cannot be parsed properly: {e}'
         )
 
-    print(response_json)
     return response_json
 
 
